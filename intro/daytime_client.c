@@ -17,10 +17,12 @@ int main(int argc, char const *argv[])
     struct sockaddr_in server_address;
     char receiveline[MAXLINE + 1];
 
-    if ((socket_fd = socket(AF_INET, SOCK_STREAM, NULL)) < 0)
+    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
         // TODO: check the errno and return more meaningful error codes
         printf("socket error: failed to init a socket");
         exit(1);
+    }
 
     /* 
      * Ip address of the server must be provided.
@@ -31,43 +33,43 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    memset(&server_address, 0, sizeof(server_address)); // initialize with zeros
-
+    bzero(&server_address, sizeof(server_address)); // initialize with zeros
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(13); // the port number of the daytime server
+    server_address.sin_port = htons(13); // convert the port number of the daytime server
 
     // convert the IP address from a string(dot notation), to a binary representation
     if (inet_pton(AF_INET, argv[1], &server_address.sin_addr) <= 0)
     {
         if (errno == EAFNOSUPPORT)
-            printf("invalid address provided");
+            printf("invalid address provided\n");
         else
-            printf("error occurred converting address");
+            printf("error occurred converting address\n");
 
         exit(1);
     }
 
-    if (connect(socket_fd, (struct sockaddr *)&server_address, sizeof(&server_address) < 0))
+    if ((connect(socket_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0))
     {
-        printf("failed to connect socket");
+        printf("failed to connect socket\n error code: %s\n", strerror(errno));
         // TODO: check the error codes in errno and return meaningful error message
         exit(1);
     }
 
     int n;
-    while ((n = read(socket_fd, receiveline, MAXLINE) > 0))
+    while (((n = read(socket_fd, receiveline, MAXLINE)) > 0))
     {
-        receiveline[n] = NULL; // null terminate
+        receiveline[n] = 0; // null terminate
         if (fputs(receiveline, stdout) == EOF)
         {
             // TODO: return a better error message
-            printf("error when writing the server's response to the output device");
+            printf("error when writing the server's response to the output device\n");
             exit(1);
         }
     }
-    if(n == -1){
+    if (n == -1)
+    {
         // TODO: check errno and return a better error message
-        printf("error: reading from the socket");
+        printf("error: reading from the socket\n");
         exit(1);
     }
 
